@@ -218,6 +218,7 @@ BEG and END are buffer positions."
   (unless (org-typst-preview--remove-overlays-in-range beg end)
     (org-typst-preview-format beg end)))
 
+;;;###autoload
 (defun org-typst-preview ()
   "Toggle preview of the Typst fragment at point.
 
@@ -234,11 +235,13 @@ When there's active region render or remove it instead."
           (org-typst-preview--select-code-block))
         (org-typst-preview--region (region-beginning) (region-end))))))
 
+;;;###autoload
 (defun org-typst-preview-clear-buffer ()
   "Remove all Typst code blocks rendered images in buffer."
   (interactive)
   (org-typst-preview--remove-overlays-in-range (point-min) (point-max)))
 
+;;;###autoload
 (defun org-typst-preview-render-buffer ()
   "Render all (unrendered) Typst code blocks in buffer."
   (interactive)
@@ -279,11 +282,6 @@ Run rerender on every theme change."
 ;; (advice-add 'load-theme :after #'org-typst-preview--rerender-all-org-buffers)
 ;; (advice-add 'enable-theme :after #'org-typst-preview--rerender-all-org-buffers)
 ;; (advice-add 'disable-theme :after #'org-typst-preview--rerender-all-org-buffers)
-
-;; Bindings
-(org-defkey org-mode-map (kbd "C-c C-x C-t") #'org-typst-preview)
-(org-defkey org-mode-map (kbd "C-c C-x t t") #'org-typst-preview-render-buffer)
-(org-defkey org-mode-map (kbd "C-c C-x t c") #'org-typst-preview-clear-buffer)
 
 (provide 'org-typst-preview)
 ;;; org-typst-preview.el ends here
