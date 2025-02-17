@@ -94,18 +94,35 @@ Note that list in reverse order."
         (forward-char))
       spans)))
 
-;; TODO: Memoize to remove necessity to walk over all buffer every time.
+;; TODO: Memoize to remove necessity to walk over all buffer every
+;; time.
 (defun org-typst-preview--select-code-block ()
-  "Select typst code block under cursor in form #[some typst code]."
+  "Return the range of the closest Typst code block in form #[some
+typst code#]."
   (interactive)
   (let* ((spans (org-typst-preview--all-code-blocks))
          (pos (point))
-         (span (seq-find
-                (lambda (p) (<= (car p) pos (1- (cdr p))))
-                spans)))
-    ;; REVIEW: Maybe push-mark?
-    (set-mark (car span))
-    (goto-char (cdr span))))
+         (distances (mapcar (lambda (p)
+                              (let ((beg (car p))
+                                    (end (cdr p)))
+                                (cons (cond ((< pos beg) (- beg pos))
+                                            ((< pos end) 0)
+                                            (t (- pos end)))
+                                      p)))
+                            spans)))
+    (let ((min-dist nil)
+          (span nil))
+      (mapcar (lambda (x)
+                (if (not min-dist)
+                    (progn
+                      (setq min-dist (car x))
+                      (setq span (cdr x)))
+                  (if (< (car x) min-dist)
+                      (progn
+                        (setq min-dist (car x))
+                        (setq span (cdr x))))))
+              distances)
+      span)))
 
 (defun org-typst-preview--render-image (typst-file-path image-file-path)
   "Generate svg image from TYPST-FILE-PATH to IMAGE-FILE-PATH."
@@ -220,20 +237,17 @@ BEG and END are buffer positions."
 
 ;;;###autoload
 (defun org-typst-preview ()
-  "Toggle preview of the Typst fragment at point.
+  "Toggle preview of the Typst fragment closest to point.
 
-If the cursor is on a Typst fragment, create the image and
-overlay it over the source code.  Remove it
-otherwise.
-
-When there's active region render or remove it instead."
+ Create/remove image overlay for the closest Typst fragment."
   (interactive)
   (cond
    ((not (display-graphic-p)) nil)
    (t (save-mark-and-excursion
-        (unless (use-region-p)
-          (org-typst-preview--select-code-block))
-        (org-typst-preview--region (region-beginning) (region-end))))))
+        (let ((span (org-typst-preview--select-code-block)))
+          (if (not span)
+              (message "No Typst code block found!")
+            (org-typst-preview--region (car span) (cdr span))))))))
 
 ;;;###autoload
 (defun org-typst-preview-clear-buffer ()
